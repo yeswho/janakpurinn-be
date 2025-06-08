@@ -2,6 +2,57 @@ const express = require("express");
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 
+// GET all bookings endpoint
+router.get("/", async (req, res) => {
+  let connection;
+  try {
+    connection = await req.db.promise().getConnection();
+    
+    // Query to get all bookings with their associated rooms
+    const [bookings] = await connection.query(`
+      SELECT 
+        b.id,
+        b.booking_reference as bookingReference,
+        b.first_name as firstName,
+        b.last_name as lastName,
+        b.email,
+        b.phone,
+        b.check_in as checkIn,
+        b.check_out as checkOut,
+        b.special_requests as specialRequests,
+        b.payment_method as paymentMethod,
+        b.total_amount as total,
+        b.status,
+        b.created_at as createdAt,
+        GROUP_CONCAT(
+          JSON_OBJECT(
+            'id', br.room_id,
+            'quantity', br.quantity
+          )
+        ) as rooms
+      FROM bookings b
+      LEFT JOIN booking_rooms br ON b.id = br.booking_id
+      GROUP BY b.id
+      ORDER BY b.created_at DESC
+    `);
+
+    // Parse the rooms JSON string into an array of objects
+    const formattedBookings = bookings.map(booking => ({
+      ...booking,
+      rooms: booking.rooms ? JSON.parse(`[${booking.rooms}]`) : [],
+      total: parseFloat(booking.total),
+    }));
+
+    res.status(200).json(formattedBookings);
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({ error: "Failed to fetch bookings" });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+// POST create booking endpoint (your existing code)
 router.post("/", async (req, res) => {
   const {
     firstName,
@@ -78,8 +129,9 @@ router.post("/", async (req, res) => {
         check_out,
         special_requests,
         payment_method,
-        total_amount
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        total_amount,
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         bookingReference,
         firstName,
@@ -90,7 +142,8 @@ router.post("/", async (req, res) => {
         checkOut,
         specialRequests || null,
         paymentMethod,
-        total
+        total,
+        'confirmed' // Default status
       ]
     );
 
