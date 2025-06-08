@@ -4,6 +4,7 @@ const mysql = require("mysql2");
 const roomsRoutes = require("./routes/rooms");
 const aboutRoutes = require("./routes/about");
 const menuRoutes = require("./routes/menu");
+const bookingRoutes = require("./routes/booking");
 const cors = require('cors');
 
 const app = express();
@@ -35,6 +36,7 @@ app.use((req, res, next) => {
 app.use("/api/rooms", roomsRoutes);
 app.use("/api/about", aboutRoutes);
 app.use("/api/menu", menuRoutes);
+app.use("/api/booking", bookingRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
