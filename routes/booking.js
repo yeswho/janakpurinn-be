@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 
-router.post("/", async (req, res) => {
+router.post("/", (req, res) => {
   const {
     firstName,
     lastName,
@@ -10,91 +10,147 @@ router.post("/", async (req, res) => {
     phone,
     checkIn,
     checkOut,
-    specialRequests = '',
+    specialRequests,
     paymentMethod,
     rooms,
     total
   } = req.body;
 
-  if (!firstName || !lastName || !email || !phone || !checkIn || !checkOut || !paymentMethod || !rooms || rooms.length === 0) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
+  const roomIds = rooms.map(room => room.id);
+  const placeholders = roomIds.map(() => '?').join(',');
+  
+  req.db.query(
+    `SELECT id, price FROM rooms WHERE id IN (${placeholders})`,
+    roomIds,
+    (err, roomResults) => {
+      if (err) return res.status(500).json({ error: "Failed to fetch room prices" });
 
-  try {
-    await req.db.beginTransaction();
-    let calculatedTotal = 0;
-    const roomUpdates = [];
-    
-    for (const roomBooking of rooms) {
-      const [room] = await req.db.query("SELECT * FROM rooms WHERE id = ? FOR UPDATE", [roomBooking.id]);
-      
-      if (!room) {
-        await req.db.rollback();
-        return res.status(400).json({ error: `Room ${roomBooking.id} not found` });
+      const roomPriceMap = {};
+      roomResults.forEach(room => {
+        roomPriceMap[room.id] = parseFloat(room.price);
+      });
+
+      let expectedTotal = 0;
+      for (const room of rooms) {
+        if (!roomPriceMap[room.id]) {
+          return res.status(400).json({ 
+            error: `Invalid room ID: ${room.id}` 
+          });
+        }
+        expectedTotal += roomPriceMap[room.id] * room.quantity;
       }
-      
-      if (room.available_rooms < roomBooking.quantity) {
-        await req.db.rollback();
-        return res.status(400).json({ error: `Not enough available rooms for ${room.title}` });
+
+      expectedTotal = Math.round(expectedTotal * 100) / 100;
+
+      if (Math.abs(expectedTotal - total) > 0.01) { // Allow for small rounding differences
+        return res.status(400).json({ 
+          error: "Price mismatch",
+          details: {
+            providedTotal: total,
+            calculatedTotal: expectedTotal,
+            difference: Math.abs(total - expectedTotal)
+          }
+        });
       }
-      
-      calculatedTotal += room.price * roomBooking.quantity;
-      roomUpdates.push({
-        id: room.id,
-        quantity: roomBooking.quantity,
-        price: room.price,
-        availableRooms: room.available_rooms - roomBooking.quantity
+
+      const bookingReference = `BOOK-${uuidv4().substring(0, 8).toUpperCase()}`;
+
+      req.db.beginTransaction(err => {
+        if (err) return res.status(500).json({ error: "Transaction error" });
+
+        const bookingQuery = `
+          INSERT INTO bookings (
+            booking_reference,
+            first_name,
+            last_name,
+            email,
+            phone,
+            check_in,
+            check_out,
+            special_requests,
+            payment_method,
+            total_amount
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        req.db.query(
+          bookingQuery,
+          [
+            bookingReference,
+            firstName,
+            lastName,
+            email,
+            phone,
+            checkIn,
+            checkOut,
+            specialRequests || null,
+            paymentMethod,
+            total
+          ],
+          (err, results) => {
+            if (err) {
+              return req.db.rollback(() => {
+                res.status(500).json({ error: "Booking creation failed" });
+              });
+            }
+
+            const bookingId = results.insertId;
+            const roomQueries = rooms.map(room => {
+              return new Promise((resolve, reject) => {
+                // Update room availability as well
+                req.db.query(
+                  `UPDATE rooms 
+                   SET available_rooms = available_rooms - ? 
+                   WHERE id = ? AND available_rooms >= ?`,
+                  [room.quantity, room.id, room.quantity],
+                  (updateErr) => {
+                    if (updateErr) {
+                      reject(new Error(`Not enough availability for room ${room.id}`));
+                      return;
+                    }
+
+                    // Insert booking room record
+                    req.db.query(
+                      "INSERT INTO booking_rooms (booking_id, room_id, quantity) VALUES (?, ?, ?)",
+                      [bookingId, room.id, room.quantity],
+                      (insertErr) => {
+                        if (insertErr) reject(insertErr);
+                        else resolve();
+                      }
+                    );
+                  }
+                );
+              });
+            });
+
+            Promise.all(roomQueries)
+              .then(() => {
+                req.db.commit(err => {
+                  if (err) {
+                    return req.db.rollback(() => {
+                      res.status(500).json({ error: "Commit failed" });
+                    });
+                  }
+                  res.status(201).json({ 
+                    success: true, 
+                    bookingReference,
+                    bookingId,
+                    totalAmount: total,
+                    calculatedTotal: expectedTotal
+                  });
+                });
+              })
+              .catch(error => {
+                req.db.rollback(() => {
+                  res.status(400).json({ 
+                    error: "Room booking failed",
+                    details: error.message
+                  });
+                });
+              });
+          }
+        );
       });
     }
-
-    if (calculatedTotal !== total) {
-      await req.db.rollback();
-      return res.status(400).json({ error: "Price mismatch detected" });
-    }
-
-    const bookingId = uuidv4();
-    const bookingNumber = `BKG-${Date.now().toString().slice(-6)}`;
-    
-    await req.db.query(
-      `INSERT INTO bookings (
-        id, booking_number, first_name, last_name, email, phone, 
-        check_in, check_out, special_requests, payment_method, 
-        total_amount, status, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
-      [
-        bookingId, bookingNumber, firstName, lastName, email, phone,
-        checkIn, checkOut, specialRequests, paymentMethod, total
-      ]
-    );
-
-    for (const roomBooking of rooms) {
-      await req.db.query(
-        `INSERT INTO booking_rooms (booking_id, room_id, quantity, price_at_booking)
-         VALUES (?, ?, ?, ?)`,
-        [bookingId, roomBooking.id, roomBooking.quantity, roomBooking.price]
-      );
-    }
-
-    for (const update of roomUpdates) {
-      await req.db.query(
-        `UPDATE rooms SET available_rooms = ? WHERE id = ?`,
-        [update.availableRooms, update.id]
-      );
-    }
-    await req.db.commit();
-
-    res.status(201).json({
-      id: bookingId,
-      bookingNumber,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    });
-
-  } catch (error) {
-    await req.db.rollback();
-    console.error("Booking error:", error);
-    res.status(500).json({ error: "Failed to create booking" });
-  }
+  );
 });
-
-module.exports = router;
