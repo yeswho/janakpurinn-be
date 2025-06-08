@@ -42,7 +42,7 @@ router.post("/", (req, res) => {
 
       expectedTotal = Math.round(expectedTotal * 100) / 100;
 
-      if (Math.abs(expectedTotal - total) > 0.01) { // Allow for small rounding differences
+      if (Math.abs(expectedTotal - total) > 0.01) {
         return res.status(400).json({ 
           error: "Price mismatch",
           details: {
@@ -97,7 +97,6 @@ router.post("/", (req, res) => {
             const bookingId = results.insertId;
             const roomQueries = rooms.map(room => {
               return new Promise((resolve, reject) => {
-                // Update room availability as well
                 req.db.query(
                   `UPDATE rooms 
                    SET available_rooms = available_rooms - ? 
@@ -109,7 +108,6 @@ router.post("/", (req, res) => {
                       return;
                     }
 
-                    // Insert booking room record
                     req.db.query(
                       "INSERT INTO booking_rooms (booking_id, room_id, quantity) VALUES (?, ?, ?)",
                       [bookingId, room.id, room.quantity],
@@ -154,3 +152,5 @@ router.post("/", (req, res) => {
     }
   );
 });
+
+module.exports = router;
