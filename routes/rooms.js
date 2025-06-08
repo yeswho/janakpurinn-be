@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  req.db.query("SELECT * FROM rooms", (err, results) => {
-    if (err) return res.status(500).json({ error: "Server error" });
+router.get("/", async (req, res) => {
+  try {
+    // Use the promise interface (req.dbPromise)
+    const [results] = await req.dbPromise.query("SELECT * FROM rooms");
 
     const formatted = results.map(row => ({
       id: row.id,
@@ -22,8 +23,10 @@ router.get("/", (req, res) => {
     }));
 
     res.json(formatted);
-  });
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
-
 
 module.exports = router;
