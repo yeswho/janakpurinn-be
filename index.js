@@ -2,12 +2,19 @@ require("dotenv").config();
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
 const app = express();
-app.use(express.json());
-app.use(cors());
 
-// Create both regular and promise-based pools
+// Middleware setup
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
+
+// Database connection setup
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -31,23 +38,63 @@ db.getConnection((err, connection) => {
   }
 });
 
-// Middleware to attach both db interfaces
+// Middleware to attach db interfaces and parse pagination
 app.use((req, res, next) => {
-  req.db = db;          // callback interface
-  req.dbPromise = dbPromise;  // promise interface
+  req.db = db;
+  req.dbPromise = dbPromise;
+  
+  // Parse pagination parameters from query string
+  req.pagination = {
+    page: parseInt(req.query.page) || 1,
+    limit: parseInt(req.query.limit) || 10,
+    offset: (parseInt(req.query.page || 1) - 1) * (parseInt(req.query.limit) || 10)
+  };
+  
   next();
 });
 
-// Import routes after db setup
+// Import routes
 const roomsRoutes = require("./routes/rooms");
 const aboutRoutes = require("./routes/about");
 const menuRoutes = require("./routes/menu");
 const bookingRoutes = require("./routes/booking");
+const { router: authRouter, authenticateAdmin } = require("./routes/auth");
 
+// Admin routes
+const adminBookingRoutes = require("./routes/admin/booking");
+
+// Public routes
 app.use("/api/rooms", roomsRoutes);
 app.use("/api/about", aboutRoutes);
 app.use("/api/menu", menuRoutes);
 app.use("/api/booking", bookingRoutes);
+app.use("/api/auth", authRouter);
+
+// Protected admin routes with pagination support
+app.use("/api/admin/bookings", authenticateAdmin, adminBookingRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    pagination: req.pagination
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    ...(req.pagination && { pagination: req.pagination })
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+module.exports = {
+  db,
+  dbPromise,
+  app
+};
