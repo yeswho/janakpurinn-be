@@ -179,6 +179,7 @@ router.post("/", async (req, res) => {
       lastName,
       email,
       bookingReference,
+      phone,
       checkIn: new Date(checkIn).toLocaleDateString(),
       checkOut: new Date(checkOut).toLocaleDateString(),
       total: total.toFixed(2),
