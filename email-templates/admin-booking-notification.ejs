@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .header { background-color: #d1ecf1; padding: 15px; }
+        .details { margin: 20px 0; }
+        .system-info { font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>New Booking Notification</h2>
+        <p><%= adminNote %></p>
+    </div>
+    
+    <div class="details">
+        <h3>Booking #<%= bookingReference %></h3>
+        <p><strong>Guest:</strong> <%= firstName %> <%= lastName %></p>
+        <p><strong>Email:</strong> <%= email %></p>
+        <p><strong>Dates:</strong> <%= checkIn %> to <%= checkOut %></p>
+        <p><strong>Payment Method:</strong> <%= paymentMethod %></p>
+        <p><strong>Phone:</strong> <%= phone %></p>
+        <p><strong>Special Requests:</strong> <%= specialRequests %></p>
+        <p><strong>Total Per Night:</strong> NPR <%= total %></p>
+        
+        <h4>Rooms Booked:</h4>
+        <ul>
+            <% rooms.forEach(room => { %>
+            <li><%= room.quantity %> x <%= room.name %> (NPR <%= room.price %> each)</li>
+            <% }); %>
+        </ul>
+    </div>
+    
+    <div class="system-info">
+        <p><strong>System Information:</strong></p>
+        <p>Received at: <%= new Date(timestamp).toLocaleString() %></p>
+        <p>IP Address: <%= ipAddress %></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #4a6baf; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f9f9f9; }
+        .footer { margin-top: 20px; padding: 10px; text-align: center; font-size: 12px; color: #777; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Booking Received</h1>
+            <p>Reference #<%= bookingReference %></p>
+        </div>
+        
+        <div class="content">
+            <p>Dear <%= firstName %> <%= lastName %>,</p>
+            <p>Thank you for your booking with us. We will be calling you shortly if additional information is required. Below are your booking details:</p>
+            
+            <h3>Booking Summary</h3>
+            <table>
+                <tr>
+                    <th>Check-in Date</th>
+                    <td><%= checkIn %></td>
+                </tr>
+                <tr>
+                    <th>Check-out Date</th>
+                    <td><%= checkOut %></td>
+                </tr>
+                <tr>
+                    <th>Total Amount Per Night</th>
+                    <td>NPR <%= total %></td>
+                </tr>
+                <tr>
+                    <th>Payment Method</th>
+                    <td><%= paymentMethod %></td>
+                </tr>
+            </table>
+            
+            <h3>Room Details</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Room Type</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% rooms.forEach(room => { %>
+                    <tr>
+                        <td><%= room.name %></td>
+                        <td><%= room.quantity %></td>
+                        <td>NPR <%= room.price %></td>
+                        <td>NPR <%= room.subtotal %></td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+            
+            <p><strong>Special Requests:</strong> <%= specialRequests %></p>
+            
+            <p>If you have any questions, please contact us at janakpurinnhna2079@gmail.com</p>
+        </div>
+        
+        <div class="footer">
+            <p>© <%= new Date().getFullYear() %> Hotel Name. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

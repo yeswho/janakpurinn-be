@@ -1,14 +1,28 @@
 const express = require("express");
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
+const nodemailer = require('nodemailer');
+const ejs = require('ejs');
+const path = require('path');
 
-// GET all bookings endpoint
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
+
+async function renderTemplate(templateName, data) {
+  const templatePath = path.join(__dirname, '../email-templates', `${templateName}.ejs`);
+  return ejs.renderFile(templatePath, data);
+}
+
 router.get("/", async (req, res) => {
   let connection;
   try {
     connection = await req.db.promise().getConnection();
-    
-    // Query to get all bookings with their associated rooms
+
     const [bookings] = await connection.query(`
       SELECT 
         b.id,
@@ -36,7 +50,6 @@ router.get("/", async (req, res) => {
       ORDER BY b.created_at DESC
     `);
 
-    // Parse the rooms JSON string into an array of objects
     const formattedBookings = bookings.map(booking => ({
       ...booking,
       rooms: booking.rooms ? JSON.parse(`[${booking.rooms}]`) : [],
@@ -52,7 +65,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST create booking endpoint (your existing code)
 router.post("/", async (req, res) => {
   const {
     firstName,
@@ -67,37 +79,32 @@ router.post("/", async (req, res) => {
     total
   } = req.body;
 
-  // Validate required fields
   if (!firstName || !lastName || !email || !phone || !checkIn || !checkOut || !paymentMethod || !rooms || !total) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // Validate rooms array
   if (!Array.isArray(rooms) || rooms.length === 0) {
     return res.status(400).json({ error: "Invalid rooms data" });
   }
 
   let connection;
   try {
-    // Get a connection from the pool
     connection = await req.db.promise().getConnection();
-
-    // Start transaction
     await connection.beginTransaction();
 
-    // Get room prices
     const roomIds = rooms.map(room => room.id);
     const placeholders = roomIds.map(() => '?').join(',');
-    
+
     const [roomResults] = await connection.query(
-      `SELECT id, price FROM rooms WHERE id IN (${placeholders})`,
+      `SELECT id, price, title FROM rooms WHERE id IN (${placeholders})`,
       roomIds
     );
 
-    // Validate rooms and calculate expected total
     const roomPriceMap = {};
+    const roomDetails = {};
     roomResults.forEach(room => {
       roomPriceMap[room.id] = parseFloat(room.price);
+      roomDetails[room.id] = room.title;
     });
 
     let expectedTotal = 0;
@@ -114,10 +121,8 @@ router.post("/", async (req, res) => {
       throw new Error(`Price mismatch. Expected: ${expectedTotal}, Provided: ${total}`);
     }
 
-    // Generate booking reference
     const bookingReference = `BOOK-${uuidv4().substring(0, 8).toUpperCase()}`;
 
-    // Insert booking
     const [bookingResult] = await connection.query(
       `INSERT INTO bookings (
         booking_reference,
@@ -143,15 +148,13 @@ router.post("/", async (req, res) => {
         specialRequests || null,
         paymentMethod,
         total,
-        'confirmed' // Default status
+        'confirmed'
       ]
     );
 
     const bookingId = bookingResult.insertId;
 
-    // Process room bookings
     for (const room of rooms) {
-      // Update room availability
       const [updateResult] = await connection.query(
         `UPDATE rooms 
          SET available_rooms = available_rooms - ? 
@@ -163,37 +166,81 @@ router.post("/", async (req, res) => {
         throw new Error(`Not enough availability for room ${room.id}`);
       }
 
-      // Insert booking room record
       await connection.query(
         "INSERT INTO booking_rooms (booking_id, room_id, quantity) VALUES (?, ?, ?)",
         [bookingId, room.id, room.quantity]
       );
     }
 
-    // Commit transaction
     await connection.commit();
 
-    // Return success response
-    res.status(201).json({ 
-      success: true, 
+    const emailData = {
+      firstName,
+      lastName,
+      email,
+      bookingReference,
+      checkIn: new Date(checkIn).toLocaleDateString(),
+      checkOut: new Date(checkOut).toLocaleDateString(),
+      total: total.toFixed(2),
+      paymentMethod,
+      specialRequests: specialRequests || 'None',
+      rooms: rooms.map(room => ({
+        name: roomDetails[room.id],
+        quantity: room.quantity,
+        price: roomPriceMap[room.id].toFixed(2),
+        subtotal: (roomPriceMap[room.id] * room.quantity).toFixed(2)
+      })),
+      bookingDate: new Date().toLocaleDateString()
+    };
+    const html = await renderTemplate('booking-confirmation', emailData);
+
+    try {
+      await transporter.sendMail({
+        from: `"Hotel JanakpurInn" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: `Booking Confirmation #${bookingReference}`,
+        html: html
+      });
+
+      const adminHtml = await renderTemplate('admin-booking-notification', {
+        ...emailData,
+        adminNote: "New booking received. Please review the details below:",
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        timestamp: new Date().toISOString()
+      });
+
+      await transporter.sendMail({
+        from: `"Booking System" <${process.env.EMAIL_USER}>`,
+        to: process.env.ADMIN_EMAIL,
+        subject: `[New Booking] #${bookingReference} - ${firstName} ${lastName}`,
+        html: adminHtml,
+        text: `New booking received:\n\nReference: ${bookingReference}\nGuest: ${firstName} ${lastName}\nAmount: NPR ${total}`
+      });
+
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+    }
+
+    res.status(201).json({
+      success: true,
       bookingReference,
       bookingId,
       totalAmount: total,
-      calculatedTotal: expectedTotal
+      calculatedTotal: expectedTotal,
+      message: "Booking confirmed and confirmation email sent"
     });
 
   } catch (error) {
-    // Rollback transaction if there was an error
     if (connection) {
       await connection.rollback();
     }
 
-    // Handle specific errors
     if (error.message.includes('Invalid room ID')) {
       return res.status(400).json({ error: error.message });
     }
     if (error.message.includes('Price mismatch')) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: error.message,
         details: {
           providedTotal: total,
@@ -206,11 +253,24 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
 
-    // Generic error response
     console.error("Booking error:", error);
-    res.status(500).json({ error: "Booking failed", details: error.message });
+
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: process.env.ADMIN_EMAIL,
+        subject: 'Booking System Error',
+        text: `Error processing booking: ${error.message}\n\n${error.stack}`
+      });
+    } catch (emailError) {
+      console.error("Failed to send error email:", emailError);
+    }
+
+    res.status(500).json({
+      error: "Booking failed",
+      details: process.env.NODE_ENV === 'development' ? error.message : 'Please try again later'
+    });
   } finally {
-    // Release the connection back to the pool
     if (connection) {
       connection.release();
     }
