@@ -1,0 +1,396 @@
+CREATE TABLE rooms (
+  id VARCHAR(20) PRIMARY KEY,
+  title VARCHAR(100),
+  category ENUM('Apartment', 'Deluxe', 'Standard', 'Non A/C'),
+  description TEXT,
+  price DECIMAL(10, 2),
+  size VARCHAR(50),
+  capacity VARCHAR(50),
+  amenities TEXT,         -- Comma-separated
+  main_image VARCHAR(255),
+  gallery_images TEXT,    -- Comma-separated
+  available_rooms INT
+);
+
+INSERT INTO rooms(
+    id,
+    title,
+    category,
+    description,
+    price,
+    size,
+    capacity,
+    amenities,
+    main_image,
+    gallery_images,
+    available_rooms
+)
+VALUES(
+    'apt-001',
+    'Double bed Appartment with A/C',
+    'Apartment',
+    'Spacious apartment with a luxurious room with double bed, flat screen tv, sofa, tea table, attached washroom, wooden cabinets, kitchen and kitchenwares with views of Ramanand Chowk.',
+    4500,
+    '650 sq.ft',
+    '2 Adults',
+    'Double bed,Kitchenette,Smart TV,Free WiFi,Room service,Air conditioning,Daily housekeeping,Silent neighborhood,24 hr running water',
+    '/images/rooms/apartment.jpg',
+    '/images/rooms/apartment-1.jpg,/images/rooms/apartment-2.jpg,/images/rooms/apartment-3.jpg',
+    4
+),(
+    'apt-002',
+    '1 Double bed + Single bed Apartment with A/C',
+    'Apartment',
+    'Elegant room with premium furnishings, luxurious bathroom with shower. Features a double bed, flat screen tv, single bed, tea table, attached washroom, wooden cabinets, kitchen and kitchenwares.',
+    4500,
+    '400 sq.ft',
+    '3 Adults',
+    'Double bed,Single bed,24 hr running water,Smart TV,Free WiFi,Mini fridge,Silent neighborhood,Kitchenette',
+    '/images/rooms/deluxe.jpg',
+    '/images/rooms/deluxe-1.jpg,/images/rooms/deluxe-2.jpg',
+    6
+),(
+    'dlx-001',
+    '1 Double bed Deluxe room with A/C',
+    'Deluxe',
+    'Cozy room with all essential amenities with a double bed, flat screen tv, attached washroom, wooden closet, balcony and Dressing table.',
+    3500,
+    '300 sq.ft',
+    '2 Adults',
+    'Double bed,Smart TV,Free WiFi,24 hr running water,Daily housekeeping,Balcony,Air conditioning,Room service',
+    '/images/rooms/standard.jpg',
+    '/images/rooms/standard-1.jpg,/images/rooms/standard-2.jpg',
+    8
+),(
+    'std-001',
+    '1 Double bed Standard room with A/C',
+    'Standard',
+    'Standard option with a double bed, flat screen tv, attached washroom, furniture closet,washroom and Dressing table',
+    3000,
+    '250 sq.ft',
+    '2 Adults',
+    'Double beds,Air conditioning,Free WiFi,Daily housekeeping,Room service,Silent neighborhood,24 hr running water',
+    '/images/rooms/non-ac.jpg',
+    '/images/rooms/non-ac-1.jpg',
+    5
+),(
+    'nac-001',
+    '1 single bed room NON-A/C',
+    'Non A/C',
+    'A comfortable room with a single bed, flat screen tv, furniture closet (NON ATTACHED WASHROOM)',
+    1200,
+    '250 sq.ft',
+    '1 Adult',
+    'Single beds,Ceiling fan,Free WiFi,Daily housekeeping,Room service,Silent neighborhood,24 hr running water',
+    '/images/rooms/non-ac.jpg',
+    '/images/rooms/non-ac-1.jpg',
+    5
+),(
+    'nac-002',
+    '2 single bed room NON-A/C',
+    'Non A/C',
+    'A comfortable room with a single bed, flat screen tv, furniture closet (NON ATTACHED WASHROOM)',
+    2000,
+    '250 sq.ft',
+    '2 Adults',
+    '2 Single beds,Ceiling fan,Free WiFi,Daily housekeeping,Room service,Silent neighborhood,24 hr running water',
+    '/images/rooms/non-ac.jpg',
+    '/images/rooms/non-ac-1.jpg',
+    5
+),(
+    'std-002',
+    '4 single bed room with A/C',
+    'Standard',
+    'A comfortable room with a single bed, flat screen tv, furniture closet (NON ATTACHED WASHROOM)',
+    3000,
+    '250 sq.ft',
+    '4 Adults',
+    '4 Single beds,Ceiling fan,Free WiFi,Daily housekeeping,Room service,Silent neighborhood,24 hr running water',
+    '/images/rooms/non-ac.jpg',
+    '/images/rooms/non-ac-1.jpg',
+    5
+)
+
+
+
+ABOUT:
+
+CREATE TABLE about_sections (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255),
+  content TEXT,
+  image VARCHAR(255)
+);
+
+CREATE TABLE team_members (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255),
+  position VARCHAR(255),
+  bio TEXT,
+  image VARCHAR(255)
+);
+
+
+INSERT INTO about_sections (title, content, image) VALUES
+('Elegant Accommodations',
+'Within our boutique hotel establishment, you\'ll find a range of contemporary and spacious rooms tailored to your comfort needs. We offer four distinct categories: luxurious Apartments, premium Deluxe rooms, comfortable Standard rooms, and value Non A/C standard rooms - each thoughtfully furnished with modern aesthetics and local artisan touches.',
+'/images/rooms.jpg'),
+
+('Prime Location',
+'Janakpur Inn is idyllically located in the peaceful enclave of Ramanand Chowk, just 15 minutes from Janakpur airport. Our location combines tranquility with convenience, placing you near sacred sites while offering easy access to the city\'s vibrant culture.',
+'/images/location.jpg'),
+
+('Cultural Heritage',
+'Ramanand Chowk holds deep significance as a Hindu pilgrimage site linked to the Ramayana. We\'ve designed our hotel to reflect this spiritual heritage while providing modern comforts, creating a unique blend of tradition and contemporary hospitality.',
+'/images/culture.jpg');
+
+
+INSERT INTO team_members (name, position, bio, image) VALUES
+('Satyendra Sah', 'Hotel Owner',
+'Satyendra\'s vision for Janakpur Inn is to create a sanctuary that reflects the rich cultural heritage of Janakpur while providing modern comforts.',
+'/images/team-1.jpg'),
+
+('Dhiraj Kumar Sah', 'General Manager',
+'Dhiraj oversees daily operations, ensuring that every guest receives the highest level of service and care.',
+'/images/team-1.jpg'),
+
+('Manish Sah', 'Head of Housekeeping',
+'Manish leads our housekeeping team, ensuring that every corner of the hotel is spotless and welcoming.',
+'/images/team-2.jpg'),
+
+('Ajay Thapa', 'Executive Chef',
+'Ajay brings a wealth of culinary expertise, crafting dishes that blend traditional flavors with modern techniques.',
+'/images/team-3.jpg');
+
+
+
+
+MENU:
+-- Create the main menu sections table
+CREATE TABLE menu_sections (
+    section_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    display_order INT NOT NULL
+);
+
+-- Create subsections table
+CREATE TABLE menu_subsections (
+    subsection_id INT AUTO_INCREMENT PRIMARY KEY,
+    section_id INT NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    description TEXT,
+    display_order INT NOT NULL,
+    FOREIGN KEY (section_id) REFERENCES menu_sections(section_id)
+);
+
+-- Create menu items table
+CREATE TABLE menu_items (
+    item_id INT AUTO_INCREMENT PRIMARY KEY,
+    subsection_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    price VARCHAR(50) NOT NULL,
+    display_order INT NOT NULL,
+    FOREIGN KEY (subsection_id) REFERENCES menu_subsections(subsection_id)
+);
+
+-- Insert menu sections
+INSERT INTO menu_sections (title, display_order) VALUES 
+('Beverages and Breakfast', 1),
+('Appetizers and Sides', 2),
+('Main Course', 3),
+('Snacks', 4);
+
+-- Insert subsections and items for Beverages and Breakfast
+INSERT INTO menu_subsections (section_id, title, description, display_order) VALUES 
+(1, 'Beverages', NULL, 1),
+(1, 'Breakfast', NULL, 2);
+
+-- Beverages items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(1, 'Milk Tea', 'Rs.80', 1),
+(1, 'Hot Chocolate', 'Rs.130', 2),
+(1, 'Black Tea/ Lemon Tea', 'Rs.60', 3),
+(1, 'Black Coffee', 'Rs.90', 4),
+(1, 'Milk Coffee', 'Rs.120', 5),
+(1, 'Hot Milk', 'Rs.90', 6),
+(1, 'Hot Lemon, Ginger & Honey', 'Rs.170', 7);
+
+-- Breakfast items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(2, 'Corn Flakes with Milk', 'Rs.170', 1),
+(2, 'Plain Toast with Butter & Jam', 'Rs.110', 2),
+(2, 'Boiled Egg/ Egg Fried', 'Rs.90', 3),
+(2, 'Aalu Paratha With Aachar and curd', 'Rs.180', 4),
+(2, 'Paneer Paratha With Aachar and curd', 'Rs.210', 5);
+
+-- Insert subsections and items for Appetizers and Sides
+INSERT INTO menu_subsections (section_id, title, description, display_order) VALUES 
+(2, 'Veg Appetizers', NULL, 1),
+(2, 'Non-Veg Appetizers', NULL, 2),
+(2, 'Our Soups', NULL, 3),
+(2, 'Fresh Salad', NULL, 4);
+
+-- Veg Appetizers items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(3, 'Veg Pakoda', 'Rs.220', 1),
+(3, 'Panner Pakoda', 'Rs.350', 2),
+(3, 'Paneer Chilly', 'Rs.390', 3),
+(3, 'Paneer Dameko', 'Rs.390', 4),
+(3, 'Mushroom Pakoda', 'Rs.320', 5),
+(3, 'Mushroom Chilly Garlic', 'Rs.350', 6),
+(3, 'Peanuts Sadeko/fry/Masala', 'Rs.220', 7),
+(3, 'Chashewnuts Fry', 'Rs.360', 8),
+(3, 'Veg Sping Roll', 'Rs.290', 9),
+(3, 'Papad Masala', 'Rs.180', 10),
+(3, 'Papad Roaster/Papad Fry (2Pcs)', 'Rs.90', 11);
+
+-- Non-Veg Appetizers items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(4, 'Chicken Lolipop(2pcs)', 'Rs.320', 1),
+(4, 'Chicken Drumstick (2Pcs)', 'Rs.320', 2),
+(4, 'Chicken Chilly', 'Rs.350', 3),
+(4, 'Chicken spring Roll', 'Rs.360', 4),
+(4, 'Chicken Manchuriyan', 'Rs.400', 5),
+(4, 'Crispy Spicy Chicken Wings (4pcs)', 'Rs.360', 6),
+(4, 'Nepali Chicken Roast (4Pcs)', 'Rs.450', 7),
+(4, 'Mutton Tass', 'Rs.485', 8),
+(4, 'Mutton Sadheko', 'Rs.400', 9),
+(4, 'Mutton Chhoila', 'Rs.420', 10),
+(4, 'Mithila Fish Fry (2Pcs)', 'Rs.220', 11),
+(4, 'JanakpurInn Special ( Mutton )', 'Rs.490', 12);
+
+-- Our Soups items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(5, 'Sweet Corn Soup', 'Rs.320', 1),
+(5, 'Veg Hot and Sour', 'Rs.320', 2),
+(5, 'Chicken Hot And Sour', 'Rs.350', 3),
+(5, 'Chicken Manchow', 'Rs.360', 4),
+(5, 'Chicken Clean', 'Rs.400', 5);
+
+-- Fresh Salad items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(6, 'Nepali Salad', 'Rs.170', 1),
+(6, 'Green Garden Salad', 'Rs.160', 2),
+(6, 'Onion Salad', 'Rs.130', 3);
+
+-- Insert subsections and items for Main Course
+INSERT INTO menu_subsections (section_id, title, description, display_order) VALUES 
+(3, 'Traditional Thali', 'Authentic Nepali Cuisine', 1),
+(3, 'Flavour Of Basmati Rice', NULL, 2),
+(3, 'Main Course-Veg', NULL, 3),
+(3, 'Main Course-Non Veg', NULL, 4);
+
+-- Traditional Thali items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(7, 'Veg Thali: Daal, Saag, Aalu Bhujiya, MixVeg, Aachar, papad, Salad, Curd, Rice', 'Rs.350', 1),
+(7, 'Chicken Thali: Daal, Saag, Aalu Bhujiya, MixVeg, Aachar, papad, Salad, Curd, Chicken, Rice', 'Rs.450', 2),
+(7, 'Mutton Thali: Daal, Saag, Aalu Bhujiya, MixVeg, Aachar, papad, Salad, Curd, Mutton, Rice', 'Rs.550', 3),
+(7, 'Egg Thali: Daal, Saag, Aalu Bhujiya, MixVeg, Aachar, papad, Salad, Curd, Egg, Rice', 'Rs.400', 4),
+(7, 'Fish Thali: Daal, Saag, Aalu Bhujiya, MixVeg, Aachar, papad, Salad, Curd, Fish, Rice', 'Rs.420', 5);
+
+-- Flavour Of Basmati Rice items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(8, 'Mutton Biryani', 'Rs.490', 1),
+(8, 'Chicken Biryani', 'Rs.420', 2),
+(8, 'Veg-Biryani', 'Rs.290', 3),
+(8, 'Jeera Rice/ Butter Rice', 'Rs.180', 4),
+(8, 'Steam Rice', 'Rs.110', 5);
+
+-- Main Course-Veg items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(9, 'Mix – Veg Curry', 'Rs.180', 1),
+(9, 'Vegetable Handi', 'Rs.340', 2),
+(9, 'Paneer Tikka Masala', 'Rs.350', 3),
+(9, 'Paneer Handi', 'Rs.350', 4),
+(9, 'Matar Paneer', 'Rs.290', 5),
+(9, 'Paneer Butter Masala', 'Rs.380', 6),
+(9, 'Daal Fry/ Daal Tadka', 'Rs.250', 7),
+(9, 'Aalu Dum / Aalu jeera/ Aalu Methi', 'Rs.220', 8),
+(9, 'Aloo Do Pyaza', 'Rs.380', 9),
+(9, 'Mushroom Do Pyaza', 'Rs.340', 10);
+
+-- Main Course-Non Veg items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(10, 'Chicken Butter Masala', 'Rs.420', 1),
+(10, 'Chicken Tikika Masala', 'Rs.420', 2),
+(10, 'Chicken Kadai', 'Rs.390', 3),
+(10, 'Chicken Handi', 'Rs.390', 4),
+(10, 'Chicken Curry', 'Rs.380', 5),
+(10, 'Chicken Do Pyaza', 'Rs.380', 6),
+(10, 'Mutton Curry', 'Rs.450', 7),
+(10, 'Fish Curry', 'Rs.350', 8),
+(10, 'JanakpurInn Special ( Chicken )', 'Rs.500', 9);
+
+-- Insert subsections and items for Snacks
+INSERT INTO menu_subsections (section_id, title, description, display_order) VALUES 
+(4, 'Nepali stew', NULL, 1),
+(4, 'Veg Momo', NULL, 2),
+(4, 'Chicken Momo', NULL, 3),
+(4, 'Mutton Momo', NULL, 4);
+
+-- Nepali stew items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(11, 'Veg Thukpa', 'Rs.190', 1),
+(11, 'Chicken Thukpa', 'Rs.210', 2),
+(11, 'Mutton Thukpa', 'Rs.270', 3),
+(11, 'Egg Thukpa', 'Rs.250', 4);
+
+-- Veg Momo items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(12, 'Steam', 'Rs.150', 1),
+(12, 'Sadheko', 'Rs.170', 2),
+(12, 'Kothey', 'Rs.180', 3),
+(12, 'Fry', 'Rs.180', 4),
+(12, 'Jhol', 'Rs.190', 5),
+(12, 'Chilly', 'Rs.200', 6);
+
+-- Chicken Momo items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(13, 'Steam', 'Rs.250', 1),
+(13, 'Sadheko', 'Rs.250', 2),
+(13, 'Kothey', 'Rs.260', 3),
+(13, 'Fry', 'Rs.270', 4),
+(13, 'Jhol', 'Rs.280', 5),
+(13, 'Chilly', 'Rs.300', 6);
+
+-- Mutton Momo items
+INSERT INTO menu_items (subsection_id, name, price, display_order) VALUES 
+(14, 'Steam', 'Rs.260', 1),
+(14, 'Sadheko', 'Rs.270', 2),
+(14, 'Fry', 'Rs.280', 3),
+(14, 'Jhol', 'Rs.290', 4),
+(14, 'Kothey', 'Rs.300', 5),
+(14, 'Chilly', 'Rs.320', 6);
+
+
+Booking:
+CREATE TABLE bookings (
+  id VARCHAR(36) PRIMARY KEY,
+  booking_reference VARCHAR(20) NOT NULL UNIQUE,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  `check_in` DATE NOT NULL,
+  `check_out` DATE NOT NULL,
+  special_requests TEXT,
+  payment_method ENUM('cash', 'credit', 'debit', 'bank') NOT NULL,
+  total_amount DECIMAL(10,2) NOT NULL,
+  status ENUM('pending', 'confirmed', 'cancelled', 'completed') DEFAULT 'pending',
+  INDEX idx_booking_reference (booking_number),
+  INDEX idx_email (email),
+  INDEX idx_status (status),
+  INDEX idx_dates (`check_in`, `check_out`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+CREATE TABLE booking_rooms (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  booking_id VARCHAR(36) NOT NULL,
+  room_id VARCHAR(20) NOT NULL,
+  quantity INT NOT NULL,
+  price_at_booking DECIMAL(10,2) NOT NULL, -- Snapshot of price when booked
+  FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+  FOREIGN KEY (room_id) REFERENCES rooms(id)
+);
