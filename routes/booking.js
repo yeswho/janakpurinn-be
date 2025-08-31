@@ -6,12 +6,18 @@ const ejs = require('ejs');
 const path = require('path');
 
 const transporter = nodemailer.createTransport({
-host: "smtp.gmail.com",
-port: 465,
-secure: true,
+  host: "smtp.gmail.com",
+  port: 587, // Changed to 587 (TLS)
+  secure: false, // Set to false for port 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
+  },
+  connectionTimeout: 30000, // 30 seconds
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
+  tls: {
+    rejectUnauthorized: false // May help with certificate issues
   }
 });
 
