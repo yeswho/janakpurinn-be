@@ -156,7 +156,7 @@ router.post("/", async (req, res) => {
         checkOut,
         JSON.stringify(rooms),
         paymentMethod,
-        'Booked' // Use allowed ENUM value
+        'Pending' // Use allowed ENUM value
       ]
     );
 
