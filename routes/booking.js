@@ -94,7 +94,7 @@ router.post("/", async (req, res) => {
 
     // Use RoomType instead of rooms
     const [roomResults] = await connection.query(
-      `SELECT id, price, title FROM RoomType WHERE id IN (${placeholders})`,
+      `SELECT id, price, name FROM RoomType WHERE id IN (${placeholders})`,
       roomIds
     );
 
@@ -102,7 +102,7 @@ router.post("/", async (req, res) => {
     const roomDetails = {};
     roomResults.forEach(room => {
       roomPriceMap[room.id] = parseFloat(room.price);
-      roomDetails[room.id] = room.title;
+      roomDetails[room.id] = room.name;
     });
 
     let expectedTotal = 0;
