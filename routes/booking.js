@@ -1,30 +1,19 @@
 const express = require("express");
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-const nodemailer = require('nodemailer');
-const ejs = require('ejs');
-const path = require('path');
+// const nodemailer = require('nodemailer');
+// const ejs = require('ejs');
+// const path = require('path');
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587, // Changed to 587 (TLS)
-  secure: false, // Set to false for port 587
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  },
-  connectionTimeout: 10000, // 30 seconds
-  greetingTimeout: 30000,
-  socketTimeout: 30000,
-  tls: {
-    rejectUnauthorized: false // May help with certificate issues
-  }
-});
+// Commented out Nodemailer config since Railway does not support mailing
+/*
+const transporter = nodemailer.createTransport({ ... });
 
 async function renderTemplate(templateName, data) {
   const templatePath = path.join(__dirname, '../email-templates', `${templateName}.ejs`);
   return ejs.renderFile(templatePath, data);
 }
+*/
 
 router.get("/", async (req, res) => {
   let connection;
@@ -48,7 +37,7 @@ router.get("/", async (req, res) => {
         b.created_at as createdAt,
         GROUP_CONCAT(
           JSON_OBJECT(
-            'id', br.room_id,
+            'id', br.room_type_id,
             'quantity', br.quantity
           )
         ) as rooms
@@ -103,8 +92,9 @@ router.post("/", async (req, res) => {
     const roomIds = rooms.map(room => room.id);
     const placeholders = roomIds.map(() => '?').join(',');
 
+    // Use RoomType instead of rooms
     const [roomResults] = await connection.query(
-      `SELECT id, price, title FROM rooms WHERE id IN (${placeholders})`,
+      `SELECT id, price, title FROM RoomType WHERE id IN (${placeholders})`,
       roomIds
     );
 
@@ -122,7 +112,6 @@ router.post("/", async (req, res) => {
       }
       expectedTotal += roomPriceMap[room.id] * room.quantity;
     }
-
     expectedTotal = Math.round(expectedTotal * 100) / 100;
 
     if (Math.abs(expectedTotal - total) > 0.01) {
@@ -164,7 +153,7 @@ router.post("/", async (req, res) => {
 
     for (const room of rooms) {
       const [updateResult] = await connection.query(
-        `UPDATE rooms 
+        `UPDATE RoomType 
          SET available_rooms = available_rooms - ? 
          WHERE id = ? AND available_rooms >= ?`,
         [room.quantity, room.id, room.quantity]
@@ -175,61 +164,19 @@ router.post("/", async (req, res) => {
       }
 
       await connection.query(
-        "INSERT INTO booking_rooms (booking_id, room_id, quantity) VALUES (?, ?, ?)",
+        "INSERT INTO booking_rooms (booking_id, room_type_id, quantity) VALUES (?, ?, ?)",
         [bookingId, room.id, room.quantity]
       );
     }
 
     await connection.commit();
 
-    const emailData = {
-      firstName,
-      lastName,
-      email,
-      bookingReference,
-      phone,
-      checkIn: new Date(checkIn).toLocaleDateString(),
-      checkOut: new Date(checkOut).toLocaleDateString(),
-      total: total.toFixed(2),
-      paymentMethod,
-      specialRequests: specialRequests || 'None',
-      rooms: rooms.map(room => ({
-        name: roomDetails[room.id],
-        quantity: room.quantity,
-        price: roomPriceMap[room.id].toFixed(2),
-        subtotal: (roomPriceMap[room.id] * room.quantity).toFixed(2)
-      })),
-      bookingDate: new Date().toLocaleDateString()
-    };
+    // Commented out email sending code
+    /*
+    const emailData = { ... };
     const html = await renderTemplate('booking-confirmation', emailData);
-
-    try {
-      await transporter.sendMail({
-        from: `"Hotel JanakpurInn" <${process.env.EMAIL_USER}>`,
-        to: email,
-        subject: `Booking Confirmation #${bookingReference}`,
-        html: html
-      });
-
-      const adminHtml = await renderTemplate('admin-booking-notification', {
-        ...emailData,
-        adminNote: "New booking received. Please review the details below:",
-        ipAddress: req.ip,
-        userAgent: req.get('User-Agent'),
-        timestamp: new Date().toISOString()
-      });
-
-      await transporter.sendMail({
-        from: `"Booking System" <${process.env.EMAIL_USER}>`,
-        to: process.env.ADMIN_EMAIL,
-        subject: `[New Booking] #${bookingReference} - ${firstName} ${lastName}`,
-        html: adminHtml,
-        text: `New booking received:\n\nReference: ${bookingReference}\nGuest: ${firstName} ${lastName}\nAmount: NPR ${total}`
-      });
-
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-    }
+    await transporter.sendMail({ ... });
+    */
 
     res.status(201).json({
       success: true,
@@ -237,13 +184,11 @@ router.post("/", async (req, res) => {
       bookingId,
       totalAmount: total,
       calculatedTotal: expectedTotal,
-      message: "Booking confirmed and confirmation email sent"
+      message: "Booking confirmed"
     });
 
   } catch (error) {
-    if (connection) {
-      await connection.rollback();
-    }
+    if (connection) await connection.rollback();
 
     if (error.message.includes('Invalid room ID')) {
       return res.status(400).json({ error: error.message });
@@ -264,25 +209,12 @@ router.post("/", async (req, res) => {
 
     console.error("Booking error:", error);
 
-    try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: process.env.ADMIN_EMAIL,
-        subject: 'Booking System Error',
-        text: `Error processing booking: ${error.message}\n\n${error.stack}`
-      });
-    } catch (emailError) {
-      console.error("Failed to send error email:", emailError);
-    }
-
     res.status(500).json({
       error: "Booking failed",
       details: process.env.NODE_ENV === 'development' ? error.message : 'Please try again later'
     });
   } finally {
-    if (connection) {
-      connection.release();
-    }
+    if (connection) connection.release();
   }
 });
 
