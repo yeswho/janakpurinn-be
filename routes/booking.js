@@ -1,3 +1,67 @@
+const express = require("express");
+const router = express.Router();
+const { v4: uuidv4 } = require('uuid');
+// const nodemailer = require('nodemailer');
+// const ejs = require('ejs');
+// const path = require('path');
+
+// Commented out Nodemailer config since Railway does not support mailing
+/*
+const transporter = nodemailer.createTransport({ ... });
+
+async function renderTemplate(templateName, data) {
+  const templatePath = path.join(__dirname, '../email-templates', `${templateName}.ejs`);
+  return ejs.renderFile(templatePath, data);
+}
+*/
+
+router.get("/", async (req, res) => {
+  let connection;
+  try {
+    connection = await req.db.promise().getConnection();
+
+    const [bookings] = await connection.query(`
+      SELECT 
+        b.id,
+        b.booking_reference as bookingReference,
+        b.first_name as firstName,
+        b.last_name as lastName,
+        b.email,
+        b.phone,
+        b.check_in as checkIn,
+        b.check_out as checkOut,
+        b.special_requests as specialRequests,
+        b.payment_method as paymentMethod,
+        b.total_amount as total,
+        b.status,
+        b.created_at as createdAt,
+        GROUP_CONCAT(
+          JSON_OBJECT(
+            'id', br.room_type_id,
+            'quantity', br.quantity
+          )
+        ) as rooms
+      FROM bookings b
+      LEFT JOIN booking_rooms br ON b.id = br.booking_id
+      GROUP BY b.id
+      ORDER BY b.created_at DESC
+    `);
+
+    const formattedBookings = bookings.map(booking => ({
+      ...booking,
+      rooms: booking.rooms ? JSON.parse(`[${booking.rooms}]`) : [],
+      total: parseFloat(booking.total),
+    }));
+
+    res.status(200).json(formattedBookings);
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({ error: "Failed to fetch bookings" });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
 router.post("/", async (req, res) => {
   const {
     firstName,
@@ -133,3 +197,6 @@ router.post("/", async (req, res) => {
     if (connection) connection.release();
   }
 });
+
+
+module.exports = router;
